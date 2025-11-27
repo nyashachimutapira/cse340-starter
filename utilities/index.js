@@ -222,5 +222,15 @@ utilities.requireAuth = function requireAuth(req, res, next) {
   next();
 };
 
+utilities.checkAccountType = function (req, res, next) {
+  if (req.account) {
+    if (req.account.account_type === "Employee" || req.account.account_type === "Admin") {
+      return next();
+    }
+  }
+  req.flash("notice", "You are not authorized to access this resource.");
+  return res.redirect("/account/login");
+};
+
 module.exports = utilities;
 

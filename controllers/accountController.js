@@ -62,7 +62,7 @@ accountController.processLogin = async function processLogin(req, res) {
     utilities.attachAuthCookie(res, accessToken);
 
     req.flash("success", `Welcome back, ${account.account_firstname}!`);
-    res.redirect("/");
+    res.redirect("/account/");
   } catch (err) {
     console.error(err);
     res.status(err.status || 500).render("account/login", {
@@ -106,6 +106,102 @@ accountController.processRegistration = async function processRegistration(req, 
       account_firstname,
       account_lastname,
       account_email,
+    });
+  }
+};
+
+/**
+ * Build the account management view
+ */
+accountController.buildManagement = async function buildManagement(req, res) {
+  const nav = await utilities.getNav();
+  res.render("account/management", {
+    title: "Account Management",
+    nav,
+    errors: null,
+  });
+};
+
+/**
+ * Build the account update view
+ */
+accountController.buildUpdateAccount = async function (req, res) {
+  const account_id = parseInt(req.params.accountId);
+  const nav = await utilities.getNav();
+  const accountData = await accountModel.getAccountById(account_id);
+  
+  res.render("account/update", {
+    title: "Update Account",
+    nav,
+    errors: null,
+    account_firstname: accountData.account_firstname,
+    account_lastname: accountData.account_lastname,
+    account_email: accountData.account_email,
+    account_id: accountData.account_id,
+  });
+};
+
+/**
+ * Process account update
+ */
+accountController.updateAccount = async function (req, res) {
+  const { account_firstname, account_lastname, account_email, account_id } = req.body;
+  const nav = await utilities.getNav();
+  
+  const updateResult = await accountModel.updateAccount(
+    account_firstname,
+    account_lastname,
+    account_email,
+    account_id
+  );
+
+  if (updateResult) {
+    // Update session token with new data
+    const accountData = await accountModel.getAccountById(account_id);
+    const tokenPayload = utilities.buildAuthPayload(accountData);
+    const accessToken = utilities.generateJWT(tokenPayload);
+    utilities.attachAuthCookie(res, accessToken);
+
+    req.flash("success", `Congratulations, ${account_firstname}, you've successfully updated your account info.`);
+    res.redirect("/account/");
+  } else {
+    req.flash("error", "Sorry, the update failed.");
+    res.status(501).render("account/update", {
+      title: "Update Account",
+      nav,
+      errors: null,
+      account_firstname,
+      account_lastname,
+      account_email,
+      account_id,
+    });
+  }
+};
+
+/**
+ * Process password change
+ */
+accountController.changePassword = async function (req, res) {
+  const { account_password, account_id } = req.body;
+  const nav = await utilities.getNav();
+
+  const hashedPassword = await bcrypt.hash(account_password, 10);
+  const updateResult = await accountModel.updatePassword(hashedPassword, account_id);
+
+  if (updateResult) {
+    req.flash("success", `Congratulations, you've successfully updated your password.`);
+    res.redirect("/account/");
+  } else {
+    req.flash("error", "Sorry, the password update failed.");
+    const accountData = await accountModel.getAccountById(account_id);
+    res.status(501).render("account/update", {
+      title: "Update Account",
+      nav,
+      errors: null,
+      account_firstname: accountData.account_firstname,
+      account_lastname: accountData.account_lastname,
+      account_email: accountData.account_email,
+      account_id: accountData.account_id,
     });
   }
 };

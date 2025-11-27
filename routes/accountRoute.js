@@ -5,6 +5,12 @@ const utilities = require("../utilities");
 const accountValidate = require("../utilities/account-validation");
 
 router.get(
+  "/",
+  utilities.requireAuth,
+  utilities.handleErrors(accountController.buildManagement)
+);
+
+router.get(
   "/login",
   utilities.handleErrors(accountController.buildLogin)
 );
@@ -26,6 +32,28 @@ router.post(
   accountValidate.registrationRules(),
   accountValidate.checkRegData,
   utilities.handleErrors(accountController.processRegistration)
+);
+
+router.get(
+  "/update/:accountId",
+  utilities.requireAuth,
+  utilities.handleErrors(accountController.buildUpdateAccount)
+);
+
+router.post(
+  "/update",
+  utilities.requireAuth,
+  accountValidate.updateAccountRules(),
+  accountValidate.checkUpdateData,
+  utilities.handleErrors(accountController.updateAccount)
+);
+
+router.post(
+  "/change-password",
+  utilities.requireAuth,
+  accountValidate.changePasswordRules(),
+  accountValidate.checkPasswordData,
+  utilities.handleErrors(accountController.changePassword)
 );
 
 router.get(
